@@ -1,0 +1,119 @@
+name: Deploy
+
+on:
+  push:
+    branches:
+      - develop
+      - main
+    tags:
+      - "release-*"
+
+jobs:
+  deploy-dev:
+    if: github.ref == 'refs/heads/develop'
+    runs-on: ubuntu-latest
+    environment: dev
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Install Databricks CLI
+        run: |
+          python -m pip install --upgrade pip
+          pip install databricks-cli
+
+      - name: Deploy to dev
+        env:
+          DATABRICKS_HOST: ${{ secrets.DATABRICKS_HOST }}
+          DATABRICKS_TOKEN: ${{ secrets.DATABRICKS_TOKEN }}
+        run: |
+          databricks bundle validate --target dev
+          databricks bundle deploy --target dev
+
+  deploy-uat:
+    if: github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    environment: uat
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Install Databricks CLI
+        run: |
+          python -m pip install --upgrade pip
+          pip install databricks-cli
+
+      - name: Deploy to uat
+        env:
+          DATABRICKS_HOST: ${{ secrets.DATABRICKS_HOST }}
+          DATABRICKS_TOKEN: ${{ secrets.DATABRICKS_TOKEN }}
+        run: |
+          databricks bundle validate --target uat
+          databricks bundle deploy --target uat
+
+  deploy-preprod:
+    if: startsWith(github.ref, 'refs/tags/release-')
+    runs-on: ubuntu-latest
+    environment: preprod
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Install Databricks CLI
+        run: |
+          python -m pip install --upgrade pip
+          pip install databricks-cli
+
+      - name: Deploy to preprod
+        env:
+          DATABRICKS_HOST: ${{ secrets.DATABRICKS_HOST }}
+          DATABRICKS_TOKEN: ${{ secrets.DATABRICKS_TOKEN }}
+        run: |
+          databricks bundle validate --target preprod
+          databricks bundle deploy --target preprod
+
+  deploy-prod:
+    if: startsWith(github.ref, 'refs/tags/release-')
+    needs: deploy-preprod
+    runs-on: ubuntu-latest
+    environment: prod
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Install Databricks CLI
+        run: |
+          python -m pip install --upgrade pip
+          pip install databricks-cli
+
+      - name: Deploy to prod
+        env:
+          DATABRICKS_HOST: ${{ secrets.DATABRICKS_HOST }}
+          DATABRICKS_TOKEN: ${{ secrets.DATABRICKS_TOKEN }}
+        run: |
+          databricks bundle validate --target prod
+          databricks bundle deploy --target prod

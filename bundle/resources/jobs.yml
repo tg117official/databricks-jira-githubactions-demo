@@ -1,0 +1,36 @@
+resources:
+  jobs:
+    pipe_1_create_pipeline:
+      name: "PIPE-1 Create a pipeline - ${var.env}"
+
+      tasks:
+        - task_key: pipe_2_source_to_bronze
+          spark_python_task:
+            python_file: ${workspace.root_path}/files/src/jobs/pipe_2_source_to_bronze.py
+            parameters:
+              - --catalog
+              - ${var.catalog}
+              - --schema
+              - ${var.schema}
+              - --env
+              - ${var.env}
+          environment_key: default
+
+        - task_key: pipe_3_bronze_to_silver
+          depends_on:
+            - task_key: pipe_2_source_to_bronze
+          spark_python_task:
+            python_file: ${workspace.root_path}/files/src/jobs/pipe_3_bronze_to_silver.py
+            parameters:
+              - --catalog
+              - ${var.catalog}
+              - --schema
+              - ${var.schema}
+              - --env
+              - ${var.env}
+          environment_key: default
+
+      environments:
+        - environment_key: default
+          spec:
+            client: "1"

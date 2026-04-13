@@ -1,0 +1,58 @@
+bundle:
+  name: databricks-jira-githubactions-demo
+
+include:
+  - bundle/resources/*.yml
+
+sync:
+  include:
+    - src/**
+    - tests/**
+    - scripts/**
+    - requirements-dev.txt
+
+workspace:
+  root_path: /Workspace/Users/${workspace.current_user.userName}/.bundle/${bundle.name}/${bundle.target}
+
+targets:
+  dev:
+    mode: development
+    default: true
+    variables:
+      catalog: main
+      schema: dev
+      env: dev
+
+  uat:
+    mode: production
+    variables:
+      catalog: main
+      schema: uat
+      env: uat
+
+  preprod:
+    mode: production
+    variables:
+      catalog: main
+      schema: preprod
+      env: preprod
+
+  prod:
+    mode: production
+    variables:
+      catalog: main
+      schema: prod
+      env: prod
+
+variables:
+  catalog:
+    description: Unity Catalog catalog name
+    default: main
+
+  schema:
+    description: Target schema name
+    default: dev
+
+  env:
+    description: Deployment environment
+    default: dev

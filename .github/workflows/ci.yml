@@ -1,15 +1,56 @@
 name: CI
 
 on:
-  push:
   pull_request:
+    branches:
+      - main
+      - develop
+  push:
+    branches:
+      - main
+      - develop
+      - feature/**
 
 jobs:
-  test:
+  test-and-validate:
     runs-on: ubuntu-latest
+
     steps:
-      - name: Checkout code
+      - name: Checkout
         uses: actions/checkout@v4
 
-      - name: Run demo step
-        run: echo "CI workflow triggered"
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements-dev.txt
+          pip install databricks-cli
+
+      - name: Run ruff
+        run: |
+          ruff check .
+
+      - name: Run pytest
+        env:
+          PYTHONPATH: .
+        run: |
+          pytest -q
+
+      - name: Validate JIRA key
+        env:
+          BRANCH_NAME: ${{ github.head_ref || github.ref_name }}
+          PR_TITLE: ${{ github.event.pull_request.title || '' }}
+          COMMIT_MESSAGE: ${{ github.event.head_commit.message || '' }}
+        run: |
+          python scripts/check_jira_key.py
+
+      - name: Databricks bundle validate
+        env:
+          DATABRICKS_HOST: ${{ secrets.DATABRICKS_HOST }}
+          DATABRICKS_TOKEN: ${{ secrets.DATABRICKS_TOKEN }}
+        run: |
+          databricks bundle validate --target dev
