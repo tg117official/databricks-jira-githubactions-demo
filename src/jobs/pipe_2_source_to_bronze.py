@@ -4,6 +4,7 @@ import argparse
 from pyspark.sql import SparkSession
 from pyspark.sql.functions import col, lit, trim, upper
 
+# This is a file which includes logic for data ingestion
 
 def parse_args():
     parser = argparse.ArgumentParser()
